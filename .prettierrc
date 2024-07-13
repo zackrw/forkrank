@@ -1,0 +1,15 @@
+{
+  "tabWidth": 4,
+  "printWidth": 100,
+  "arrowParens": "avoid",
+  "quoteProps": "preserve",
+  "overrides": [
+      {
+          "files": ["*.yaml", "*.yml"],
+          "options": {
+              "tabWidth": 2
+          }
+      }
+  ]
+}
+
