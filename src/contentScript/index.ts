@@ -1,14 +1,14 @@
 import { Message } from "../background";
 
-console.info("contentScript is running 1");
+console.info("Initializing Forkrank.");
 const forYouId = "for-you-items";
 let active = false;
 setInterval(function () {
     const { href } = window.location;
-    if (href.startsWith("https://forkable.com/mc") && href.endsWith("#add-meal")) {
+    const menus = document.querySelector("#delivery-nav-menus");
+    if (href.startsWith("https://forkable.com/mc") && menus) {
         const existingForYou = document.querySelector(`#${forYouId}`);
-        const menus = document.querySelector("#delivery-nav-menus");
-        if (!existingForYou && menus) {
+        if (!existingForYou) {
             // Only one request per 10 seconds
             if (!active) {
                 active = true; // lock
