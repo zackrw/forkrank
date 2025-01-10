@@ -1,4 +1,4 @@
-Privacy Policy
+# Privacy Policy
 
 This extension is designed to prioritize user privacy while providing its functionality. Below is an explanation of how this extension interacts with user data and external services.
 
