@@ -9,21 +9,56 @@ setInterval(function () {
         const existingForYou = document.querySelector(`#${forYouId}`);
         const menus = document.querySelector("#delivery-nav-menus");
         if (!existingForYou && menus) {
+            // Only one request per 10 seconds
             if (!active) {
                 active = true; // lock
+                setTimeout(() => {
+                    active = false;
+                }, 10000);
                 chrome.storage.sync.get(["prompt"], result => {
-                    console.log(result.prompt);
                     const fullMenu = makeMenu();
-                    console.log(fullMenu);
-                    console.info("contentScript done ... getting results");
-                    getResults(result.prompt, fullMenu, menus);
+                    const forYou = document.createElement("div");
+                    forYou.id = forYouId;
+                    forYou.className = "container menu-items card-group";
+                    forYou.style.margin = "auto";
+                    forYou.innerHTML = `
+<div class="section-name" style="margin-bottom:12px;text-transform:none;">
+    <span class="text-ellipsis flex items-center">
+        <div style="font-weight:normal;display:flex;align-items:center;box-sizing:border-box;height:28px;vertical-align:middle;color:white;background:#00ae8e;padding:14px;font-size:11px;border-radius:14px">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
+            forkrank ai
+        </div>
+    </span>
+</div>
+<style>
+.fr-loader {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  margin: auto;
+}
+.fr-spinner {
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-top: 2px solid #00ae8e;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+</style>
+<div class="fr-loader fr-spinner"></div>
+        `.trim();
+                    menus.prepend(forYou);
+                    getResults(result.prompt, fullMenu, forYou);
                 });
             }
         }
     }
 }, 1000);
 
-function getResults(prompt: string, menu: Menu, menus: Element) {
+function getResults(prompt: string, menu: Menu, forYou: Element) {
     chrome.runtime.sendMessage({ type: "FORKRANK", prompt, menu }, response => {
         console.log(`Got response`);
         console.log(response);
@@ -35,48 +70,38 @@ function getResults(prompt: string, menu: Menu, menus: Element) {
         );
 
         const ids = response.result.content.split("\n");
-        const forYou = document.createElement("div");
-        forYou.id = forYouId;
-        forYou.className = "container menu-items card-group";
-        forYou.style.margin = "auto";
-        forYou.innerHTML = `
-<div class="section-name" style="margin-bottom:12px">
-    <span class="text-ellipsis flex items-center">
-        <div style="font-weight:normal;display:flex;align-items:center;box-sizing:border-box;height:28px;vertical-align:middle;color:white;background:#00ae8e;padding:14px;font-size:12px;border-radius:14px">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/></svg>
-            Forkrank AI
-        </div>
-    </span>
-</div>
-        `.trim();
-        ids.forEach((id: string) => {
-            try {
-                const item = document.querySelector(`#${id}`) as HTMLDivElement | null;
-                if (item) {
-                    const toAdd = item.cloneNode(true) as HTMLDivElement;
-                    toAdd.id = "";
-                    toAdd.setAttribute("data-id", item.id);
-                    forYou.appendChild(toAdd);
-                    toAdd.addEventListener("click", function (e) {
-                        const div = e.currentTarget as HTMLDivElement | null;
-                        if (div) {
-                            const id = div.getAttribute("data-id");
-                            if (id) {
-                                const target = document.querySelector(
-                                    `#${id}`,
-                                ) as HTMLDivElement | null;
-                                if (target) {
-                                    target.click();
+        document.querySelector(".fr-loader.fr-spinner")?.remove();
+
+        ids.forEach((id: string, idx: number) => {
+            // skip duplicates
+            if (ids.indexOf(id) === idx) {
+                try {
+                    const item = document.querySelector(`#${id}`) as HTMLDivElement | null;
+                    if (item) {
+                        const toAdd = item.cloneNode(true) as HTMLDivElement;
+                        toAdd.id = "";
+                        toAdd.setAttribute("data-id", item.id);
+                        forYou.appendChild(toAdd);
+                        toAdd.addEventListener("click", function (e) {
+                            const div = e.currentTarget as HTMLDivElement | null;
+                            if (div) {
+                                const id = div.getAttribute("data-id");
+                                if (id) {
+                                    const target = document.querySelector(
+                                        `#${id}`,
+                                    ) as HTMLDivElement | null;
+                                    if (target) {
+                                        target.click();
+                                    }
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
+                } catch (e) {
+                    console.log("Invalid ID: " + id);
                 }
-            } catch (e) {
-                console.log("Invalid ID: " + id);
             }
         });
-        menus.prepend(forYou);
     });
 }
 
@@ -93,8 +118,6 @@ export type Menu = {
 function makeMenu() {
     const restaurants = document.querySelectorAll(".nav-item");
     const sections = document.querySelectorAll(".menu-section");
-    console.log(`Found ${sections.length} sections`);
-    console.log(`Found ${restaurants.length} restaurants`);
     const menu: Menu = [];
     sections.forEach(section => {
         if (section && section.parentElement) {
@@ -104,7 +127,6 @@ function makeMenu() {
                 const restaurant = (restaurants[restaurantIdx] as HTMLLIElement).innerText;
                 const name = sectionName.innerText;
                 const menuItems = section.querySelectorAll(".card.meal-card.meal-card--selectable");
-                console.log(`Found ${menuItems.length} menu items for section: ${name}`);
                 menuItems.forEach(item => {
                     const cardBody = item.querySelector(".card-body");
                     const dish = cardBody?.querySelector("h4")?.innerText;

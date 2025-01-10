@@ -5,8 +5,6 @@ import "./Popup.css";
 export const Popup = () => {
     const [prompt, setPrompt] = useState("");
     useEffect(() => {
-        alert("HI");
-        console.log("Prompt: ", prompt);
         chrome.storage.sync.get(["prompt"], result => {
             setPrompt(result.prompt || "");
         });
@@ -31,7 +29,6 @@ export const Popup = () => {
                 placeholder="Enter your prompt"
                 value={prompt}
                 onChange={e => {
-                    console.log("Change: ", e.currentTarget.value);
                     setPrompt(e.currentTarget.value);
                 }}
             ></textarea>

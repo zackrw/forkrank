@@ -13,7 +13,8 @@ You may recommend up to 6 items that the user will like the most.
 You should provide your answers as a list, one per line. 
 You must ONLY provide items that are included in the menu.
 DO NOT repeat items.
-For each item, you may provide supporting information.
+If the customer mentions an available dish positively by name, you should absolutely recommend it.
+If the customer mentions an available restaurant positively by name, you should absolutely recommend a dish or two from it.
 `;
 
 const FILTER_PROMPT = `# Instructions
@@ -33,7 +34,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === "FORKRANK") {
         try {
             const apiKey = request.prompt.split("\n")[0];
-            console.log("Using API key: " + apiKey);
             const openai = new OpenAI({
                 apiKey,
             });
@@ -48,7 +48,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 },
                 {
                     role: "system",
-                    content: `# User Preferences\n${request.prompt}`,
+                    content: `# User Preferences\n${request.prompt.split("\n").slice(1)}`,
                 },
             ];
             openai.chat.completions
